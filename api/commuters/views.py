@@ -1,32 +1,28 @@
-from django.shortcuts import render
-
-# Create your views here.
-from rest_framework import viewsets
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+# commuters/views.py
+from rest_framework import viewsets, permissions, status as drf_status
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Employee, Enrollment
+from .models import Employee, Enrollment, CommuteOption
 from .serializers import EmployeeSerializer, EnrollmentSerializer
 
-class EmployeeViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = EmployeeSerializer
+class EnrollmentViewSet(viewsets.ModelViewSet):
+    queryset = Enrollment.objects.all().select_related("employee", "option")
+    serializer_class = EnrollmentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    # allow /api/enrollments/?status=active
     def get_queryset(self):
-        qs = Employee.objects.all().order_by("id")
-        dept = self.request.query_params.get("department")
-        status_q = self.request.query_params.get("status")
-        if dept: qs = qs.filter(department=dept)
-        if status_q: qs = qs.filter(status=status_q)
+        qs = super().get_queryset()
+        status_param = self.request.query_params.get("status")
+        if status_param:
+            qs = qs.filter(status=status_param)
         return qs
 
-class EnrollmentViewSet(viewsets.ModelViewSet):
-    queryset = Enrollment.objects.all().order_by("-id")
-    serializer_class = EnrollmentSerializer
-    permission_classes = [IsAuthenticated]
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def participation_report(request):
-    total = Employee.objects.count()
-    active = Enrollment.objects.filter(status="active").count()
-    rate = round((active/total)*100, 1) if total else 0.0
-    return Response({"participationRate": rate, "activeEnrollments": active})
+    # POST /api/enrollments/{id}/cancel/
+    @action(detail=True, methods=["post"])
+    def cancel(self, request, pk=None):
+        enrollment = self.get_object()
+        if enrollment.status != "canceled":
+            enrollment.status = "canceled"
+            enrollment.save(update_fields=["status"])
+        return Response(self.get_serializer(enrollment).data, status=drf_status.HTTP_200_OK)
