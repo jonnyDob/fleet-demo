@@ -1,10 +1,28 @@
-node_modules/
+# --- Root ---
+.DS_Store
 .env
 .env.*
-__pycache__/
-*.pyc
-.envrc
-.vercel/
-.playwright-report/
+*.log
 coverage/
+.vscode/
+.idea/
 
+# --- Python / Django (api/) ---
+api/.venv/
+api/__pycache__/
+api/**/*.pyc
+api/*.sqlite3
+api/.pytest_cache/
+api/.mypy_cache/
+api/.coverage
+# Keep migrations! (don't ignore api/**/migrations/*)
+
+# --- Node / Next.js (web/) ---
+web/node_modules/
+web/.next/
+web/.turbo/
+web/.vercel/
+web/.eslintcache
+web/coverage/
+web/playwright-report/
+web/test-results/
