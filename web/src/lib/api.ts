@@ -10,11 +10,12 @@ export const api = createApi({
     },
   }),
   endpoints: (b) => ({
-    // Login to get JWT
+    // login
     login: b.mutation<{ access: string; refresh: string }, { username: string; password: string }>({
       query: (body) => ({ url: "token/", method: "POST", body }),
     }),
-    // List employees with optional department filter
+
+    // employees list
     employees: b.query<{ results: any[]; count?: number }, { department?: string } | void>({
       query: (q) => {
         const p = new URLSearchParams();
@@ -22,7 +23,22 @@ export const api = createApi({
         return `employees/?${p.toString()}`;
       },
     }),
+
+    // POST /api/enrollments/
+    enroll: b.mutation<any, { employee: number; option: number; status?: string }>({
+      query: (body) => ({ url: "enrollments/", method: "POST", body }),
+    }),
+
+    // GET /api/reports/participation
+    report: b.query<{ participationRate: number; activeEnrollments: number }, void>({
+      query: () => "reports/participation",
+    }),
   }),
 });
 
-export const { useLoginMutation, useEmployeesQuery } = api;
+export const {
+  useLoginMutation,
+  useEmployeesQuery,
+  useEnrollMutation,
+  useReportQuery,
+} = api;
