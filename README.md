@@ -12,6 +12,6 @@ Mini commuter-benefits demo on Fleet-like stack.
 - /web — Next.js admin web
 
 ## Goals
-- Ship a working demo in 3 days
+- Ship a working demo
 - Minimal tests (1 unit, 1 API, 1 E2E)
 - Feature-flagged AI stub + caching + rate limits

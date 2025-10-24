@@ -49,6 +49,10 @@ export const api = createApi({
       query: () => "reports/participation",
       providesTags: ["Report"],
     }),
+
+    options: b.query<any[] | { results?: any[] }, void>({
+  query: () => "options/",
+}),
   }),
 });
 
