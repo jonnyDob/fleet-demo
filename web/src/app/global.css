@@ -1,0 +1,187 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* -------------------------
+   Base
+-------------------------- */
+:root {
+  color-scheme: light;
+
+  /* Fleet-ish brand tokens (purple & pinks) */
+  --brand-50:  #f7ecff;
+  --brand-100: #f0dbff;
+  --brand-200: #e5bfff;
+  --brand-300: #d59aff;
+  --brand-400: #c06cff;
+  --brand-500: #9d3df8;  /* primary */
+  --brand-600: #832bdc;
+  --brand-700: #6b22b7;
+  --brand-800: #561c93;
+  --brand-900: #451775;
+
+  --ink-900: #0b0b10;
+  --ink-700: #3d3d4a;
+  --ink-600: #56566a;
+  --ink-500: #70708a;
+
+  --border:   #ececf1;
+  --surface:  #ffffff;
+
+  /* Auth / hero gradient (purple -> pink) */
+  --hero-from: #a24cf2;
+  --hero-mid:  #cf5af9;
+  --hero-to:   #f3a6e8;
+}
+
+html, body { height: 100%; }
+body { @apply bg-white text-neutral-900 antialiased; }
+
+/* Containers */
+.container-narrow { @apply max-w-6xl mx-auto px-6; }
+.container-wide   { @apply max-w-7xl mx-auto px-6; }
+
+/* Typography helpers */
+.heading-hero { @apply text-4xl md:text-5xl font-bold tracking-tight; }
+.subtitle     { @apply text-sm text-neutral-600; }
+
+/* -------------------------
+   Cards
+-------------------------- */
+.card {
+  @apply bg-white rounded-2xl shadow-card border border-neutral-100;
+}
+.card-section {
+  @apply p-5 md:p-6;
+}
+
+/* -------------------------
+   Badges
+-------------------------- */
+.badge { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium; }
+.badge-green { @apply badge bg-green-50 text-green-700; }
+.badge-gray  { @apply badge bg-neutral-100 text-neutral-700; }
+
+/* -------------------------
+   Buttons
+-------------------------- */
+.btn { @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition; }
+.btn-primary {
+  /* Purple primary */
+  @apply btn text-white;
+  background: var(--brand-500);
+}
+.btn-primary:hover { background: var(--brand-600); }
+
+.btn-secondary { @apply btn bg-neutral-100 text-neutral-900 hover:bg-neutral-200; }
+.btn-ghost     { @apply btn bg-transparent hover:bg-neutral-100; }
+.btn-danger    { @apply btn bg-red-500 text-white hover:bg-red-600; }
+
+/* Subtle “chip” button (used on segmented control, filters) */
+.btn-chip {
+  @apply inline-flex items-center justify-center rounded-full px-4 py-1.5 text-sm font-medium border transition;
+  border-color: var(--border);
+  background: #fff;
+  color: var(--ink-700);
+}
+.btn-chip[aria-pressed="true"] {
+  background: var(--brand-50);
+  color: var(--brand-700);
+  border-color: var(--brand-200);
+}
+
+/* Sizes */
+.btn-sm { @apply px-3 py-1.5 text-xs; }
+.btn-lg { @apply px-5 py-3 text-base rounded-xl; }
+
+/* -------------------------
+   Inputs
+-------------------------- */
+.input {
+  @apply w-full rounded-lg border bg-white px-3 py-2 text-sm
+         focus:outline-none focus:ring-2;
+  border-color: var(--border);
+  box-shadow: inset 0 0 0 1px transparent;
+}
+.input:focus {
+  box-shadow: inset 0 0 0 1px var(--brand-200);
+  --tw-ring-color: color-mix(in oklab, var(--brand-300), white 30%);
+}
+
+.select { @apply input pr-8; }
+
+/* Field group label */
+.label { @apply text-sm font-medium text-neutral-800; }
+
+/* -------------------------
+   Tables
+-------------------------- */
+.table { @apply w-full text-sm; }
+.th    { @apply text-left font-medium px-4 py-3 text-neutral-600 bg-neutral-50; }
+.td    { @apply px-4 py-3; }
+
+/* Zebra rows */
+.tr-alt { @apply bg-neutral-50/40; }
+
+/* -------------------------
+   Navbar
+-------------------------- */
+.navbar { @apply border-b border-neutral-100 bg-white; }
+.navbar-inner { @apply container-narrow h-14 flex items-center justify-between; }
+.nav-link {
+  @apply text-sm text-neutral-600 hover:text-neutral-900;
+}
+
+/* -------------------------
+   Auth / Hero styling
+-------------------------- */
+
+/* Big purple-pink gradient background (use on right side of login) */
+.hero-gradient {
+  background-image:
+    radial-gradient(1200px 600px at 20% 10%, color-mix(in oklab, var(--hero-from), white 10%), transparent 70%),
+    radial-gradient(800px 600px at 80% 20%, color-mix(in oklab, var(--hero-mid), white 8%), transparent 70%),
+    radial-gradient(900px 700px at 60% 80%, color-mix(in oklab, var(--hero-to), white 8%), transparent 70%),
+    linear-gradient(135deg, var(--hero-from), var(--hero-to));
+}
+
+/* Auth page split layout (two columns on md+) */
+.auth-shell {
+  @apply grid min-h-[calc(100vh-56px)];
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+  .auth-shell { grid-template-columns: 520px 1fr; }
+}
+.auth-panel {
+  @apply flex items-center justify-center p-6;
+}
+.auth-card {
+  @apply w-full max-w-md;
+}
+
+/* -------------------------
+   Segmented control (Admin / Commuter tab)
+-------------------------- */
+.segment {
+  @apply inline-flex rounded-xl border p-1 bg-white;
+  border-color: var(--border);
+}
+.segment-btn {
+  @apply px-4 py-2 text-sm font-medium rounded-lg transition;
+  color: var(--ink-700);
+}
+.segment-btn[aria-pressed="true"] {
+  color: #fff;
+  background: var(--brand-600);
+}
+.segment-btn[aria-pressed="false"]:hover {
+  background: var(--brand-50);
+}
+
+/* -------------------------
+   Links / text helpers
+-------------------------- */
+.link        { @apply underline decoration-neutral-300 hover:decoration-neutral-500; }
+.text-muted  { @apply text-neutral-600; }
+.hr          { @apply my-5 border-t border-neutral-200; }
