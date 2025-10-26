@@ -31,7 +31,11 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="mb-8">
-            <div className="h-10 w-32 rounded-lg bg-gradient-to-r from-purple-600 to-pink-500" />
+            <div className="h-10 w-32 rounded-lg bg-gradient-to-r from-purple-600 to-pink-500 flex items-center justify-center shadow-md">
+              <span className="text-white font-bold text-xl tracking-wide">
+                Fleet
+              </span>
+            </div>
           </div>
 
           {/* Heading */}
