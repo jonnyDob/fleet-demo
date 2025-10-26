@@ -1,9 +1,14 @@
 "use client";
+import "./global.css";
 import { Provider } from "react-redux";
 import { store } from "@/store";
 import Link from "next/link";
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/login";
@@ -17,7 +22,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/employees">Employees</Link>
             <span style={{ margin: "0 8px" }}>|</span>
             <Link href="/reports">Reports</Link>
-            <button onClick={logout} style={{ float: "right" }}>Logout</button>
+            <button onClick={logout} style={{ float: "right" }}>
+              Logout
+            </button>
           </nav>
           {children}
         </Provider>
