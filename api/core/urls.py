@@ -9,6 +9,9 @@ from commuters.views import (
     EnrollmentViewSet,
     CommuteOptionViewSet,
     participation_report,
+    lobby_summary,
+    start_commute_session,
+    finish_commute_session,
 )
 
 router = DefaultRouter()
@@ -18,8 +21,22 @@ router.register(r"options", CommuteOptionViewSet, basename="options")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # main REST router (existing)
     path("api/", include(router.urls)),
+    # existing report
     path("api/reports/participation", participation_report),
+    # NEW commute game endpoints
+    path("api/commute/lobby/", lobby_summary),
+    path("api/commute/sessions/start/", start_commute_session),
+    path(
+        "api/commute/sessions/<int:pk>/finish/",
+        finish_commute_session,
+    ),
+    # auth (JWT)
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path(
+        "api/token/refresh/",
+        TokenRefreshView.as_view(),
+        name="token_refresh",
+    ),
 ]
