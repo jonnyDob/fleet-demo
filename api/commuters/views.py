@@ -82,12 +82,12 @@ def participation_report(request):
 
 
 # --------------------------------------------------------------------
-# NEW: Commute game endpoints
+# Commute game endpoints (demo-friendly, no auth required)
 # --------------------------------------------------------------------
 
 
 @api_view(["GET"])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.AllowAny])  # open for demo
 def lobby_summary(request):
     """
     Simple lobby summary for the demo.
@@ -122,7 +122,7 @@ def lobby_summary(request):
         for row in team_rows
     ]
 
-    # Fake coworkers: just list some active employees with a simple status
+    # Fake coworkers: list some active employees with a simple status
     employees = list(
         Employee.objects.filter(status="active").order_by("id")[:12]
     )
@@ -153,22 +153,22 @@ def lobby_summary(request):
 
 
 @api_view(["POST"])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.AllowAny])  # open for demo
 def start_commute_session(request):
     """
     Start a new commute session for the demo.
 
-    For v1, we just pick a single demo employee to attach sessions to.
-    Later, you can map request.user -> Employee.
+    We pick or create a single demo employee to attach sessions to.
+    Later, you can map request.user -> Employee properly.
     """
-    demo_employee = (
-        Employee.objects.filter(status="active").order_by("id").first()
+    demo_employee, _created = Employee.objects.get_or_create(
+        email="demo@fleetdemo.com",
+        defaults={
+            "name": "Demo Commuter",
+            "department": "Engineering",
+            "status": "active",
+        },
     )
-    if not demo_employee:
-        return Response(
-            {"detail": "No employees seeded yet."},
-            status=drf_status.HTTP_400_BAD_REQUEST,
-        )
 
     session = CommuteSession.objects.create(employee=demo_employee)
     return Response(
@@ -178,7 +178,7 @@ def start_commute_session(request):
 
 
 @api_view(["POST"])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.AllowAny])  # open for demo
 def finish_commute_session(request, pk: int):
     """
     Mark a commute session as completed and award fixed points.
