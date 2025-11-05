@@ -14,7 +14,14 @@ export default function LoginPage() {
     try {
       const res = await login({ username, password }).unwrap();
       localStorage.setItem("token", res.access);
-      window.location.href = "/employees";
+
+      // 🔽 NEW: branch based on active tab
+      if (tab === "admin") {
+        window.location.href = "/employees";
+      } else {
+        window.location.href = "/play/today";
+      }
+      // window.location.href = "/employees";
     } catch {
       /* handled by error rendering below */
     }

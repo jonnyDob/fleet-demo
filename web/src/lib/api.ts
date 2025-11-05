@@ -1,5 +1,36 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+
+export interface LobbyTeamTotal {
+  team: string;
+  runsThisWeek: number;
+}
+
+export interface LobbyCoworker {
+  name: string;
+  team: string;
+  status: string;
+}
+
+export interface LobbyResponse {
+  officeName: string;
+  runsToday: number;
+  runsThisWeek: number;
+  teamTotals: LobbyTeamTotal[];
+  coworkers: LobbyCoworker[];
+}
+
+export interface StartSessionResponse {
+  id: number;
+  status: "in_progress" | "completed";
+}
+
+export interface FinishSessionResponse {
+  id: number;
+  status: "completed";
+  points: number;
+}
+
 export const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
@@ -50,6 +81,24 @@ export const api = createApi({
       providesTags: ["Report"],
     }),
 
+     getLobby: b.query<LobbyResponse, void>({
+      query: () => "commute/lobby/",
+    }),
+
+    startCommuteSession: b.mutation<StartSessionResponse, void>({
+      query: () => ({
+        url: "commute/sessions/start/",
+        method: "POST",
+      }),
+    }),
+
+    finishCommuteSession: b.mutation<FinishSessionResponse, number>({
+      query: (sessionId) => ({
+        url: `commute/sessions/${sessionId}/finish/`,
+        method: "POST",
+      }),
+    }),
+
     options: b.query<any[] | { results?: any[] }, void>({
   query: () => "options/",
 }),
@@ -63,4 +112,7 @@ export const {
   useEnrollMutation,
   useCancelEnrollMutation,
   useReportQuery,
+  useGetLobbyQuery,
+  useStartCommuteSessionMutation,
+  useFinishCommuteSessionMutation,
 } = api;
