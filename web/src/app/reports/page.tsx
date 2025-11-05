@@ -1,199 +1,161 @@
+// src/app/reports/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { useReportQuery } from "@/lib/api";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  LineChart,
-  Line,
-} from "recharts";
-import {
-  TrendingUp,
-  Users,
-  DollarSign,
-  Calendar,
-  RefreshCw,
-} from "lucide-react";
-
-type Point = { day: string; participation: number };
+import { useReportQuery, useGetLobbyQuery } from "@/lib/api";
 
 export default function ReportsPage() {
-  const { data, isLoading, error, refetch } = useReportQuery(undefined, {
-    refetchOnMountOrArgChange: true,
-    refetchOnFocus: true,
-    refetchOnReconnect: true,
-  });
+  const { data: report, isLoading: loadingReport } = useReportQuery();
+  const { data: lobby, isLoading: loadingLobby } = useGetLobbyQuery();
 
-  // Demo time series: keep last 7 reads of the API (in memory)
-  const [series, setSeries] = useState<Point[]>([]);
-
-  useEffect(() => {
-    if (data?.participationRate !== undefined) {
-      const d = new Date();
-      const label = `${d.getMonth() + 1}/${d.getDate()}`;
-      setSeries((prev) => {
-        const next = [
-          ...prev.filter((p) => p.day !== label),
-          { day: label, participation: data.participationRate },
-        ];
-        return next.slice(-7);
-      });
-    }
-  }, [data?.participationRate]);
-
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white px-4 py-2 rounded-lg shadow-lg border border-gray-200">
-          <p className="text-sm font-semibold text-gray-900">
-            {payload[0].value}%
-          </p>
-          <p className="text-xs text-gray-500">{payload[0].payload.day}</p>
-        </div>
-      );
-    }
-    return null;
-  };
+  const isLoading = loadingReport || loadingLobby;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50/30">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Program Analytics
-              </h1>
-              <p className="text-gray-600">
-                Real-time insights into your transit benefit program
-              </p>
-            </div>
-            <button
-              onClick={() => refetch()}
-              disabled={isLoading}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 text-white font-medium hover:shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
-              />
-              Refresh Data
-            </button>
+    <div className="min-h-screen bg-gradient-to-b from-brand-50 via-white to-brand-100">
+      <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+        {/* Header */}
+        <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-neutral-500">
+              HR console
+            </p>
+            <h1 className="text-2xl font-bold text-neutral-900">
+              Commute engagement overview
+            </h1>
+            <p className="text-sm text-neutral-600">
+              See how many people are enrolled in commute benefits, and how
+              often they&apos;re turning commute time into something positive.
+            </p>
           </div>
-        </div>
-      </div>
+        </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
         {isLoading && (
-          <div className="text-center py-12">
-            <div className="inline-block w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-            <p className="mt-4 text-gray-600">Loading report data...</p>
-          </div>
+          <p className="text-sm text-neutral-600">Loading reports…</p>
         )}
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-600">
-            Failed to load report data
-          </div>
-        )}
-
-        {data && !isLoading && (
-          <>
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {/* Participation Rate */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-sm font-medium text-green-600">
-                    ↑ Live Data
-                  </span>
-                </div>
-                <div className="text-3xl font-bold text-gray-900 mb-1">
-                  {data.participationRate}%
-                </div>
-                <div className="text-sm text-gray-600">Participation Rate</div>
-              </div>
-
-              {/* Active Enrollments */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                    <Users className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-500">
-                    Total Enrolled
-                  </span>
-                </div>
-                <div className="text-3xl font-bold text-gray-900 mb-1">
-                  {data.activeEnrollments}
-                </div>
-                <div className="text-sm text-gray-600">Active Enrollments</div>
-              </div>
-            </div>
-
-            {/* Chart */}
-            {series.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    7-Day Participation Trend
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Daily participation rate over the last week
+        {!isLoading && (
+          <div className="space-y-6">
+            {/* Top tiles: existing participation + new office metrics */}
+            <section className="grid md:grid-cols-3 gap-4">
+              {/* Existing participation metric */}
+              <div className="card">
+                <div className="card-section space-y-1">
+                  <p className="text-xs text-neutral-500">
+                    Benefit participation
+                  </p>
+                  <p className="text-2xl font-bold text-neutral-900">
+                    {report?.participationRate ?? 0}%
+                  </p>
+                  <p className="text-xs text-neutral-600">
+                    {report?.activeEnrollments ?? 0} active enrollments right
+                    now.
                   </p>
                 </div>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={series}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis
-                        dataKey="day"
-                        stroke="#9ca3af"
-                        style={{ fontSize: "12px" }}
-                      />
-                      <YAxis
-                        domain={[0, 100]}
-                        stroke="#9ca3af"
-                        style={{ fontSize: "12px" }}
-                      />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Line
-                        type="monotone"
-                        dataKey="participation"
-                        stroke="url(#colorGradient)"
-                        strokeWidth={3}
-                        dot={{ fill: "#9333ea", strokeWidth: 2, r: 4 }}
-                        activeDot={{ r: 6 }}
-                      />
-                      <defs>
-                        <linearGradient
-                          id="colorGradient"
-                          x1="0"
-                          y1="0"
-                          x2="1"
-                          y2="0"
-                        >
-                          <stop offset="0%" stopColor="#9333ea" />
-                          <stop offset="100%" stopColor="#ec4899" />
-                        </linearGradient>
-                      </defs>
-                    </LineChart>
-                  </ResponsiveContainer>
+              </div>
+
+              {/* Weekly commute runs */}
+              <div className="card">
+                <div className="card-section space-y-1">
+                  <p className="text-xs text-neutral-500">
+                    Commute runs this week
+                  </p>
+                  <p className="text-2xl font-bold text-neutral-900">
+                    {lobby?.runsThisWeek ?? 0}
+                  </p>
+                  <p className="text-xs text-neutral-600">
+                    Each completed &quot;quest&quot; is a run where someone
+                    turned commute time into something intentional.
+                  </p>
                 </div>
               </div>
-            )}
-          </>
+
+              {/* Today runs */}
+              <div className="card">
+                <div className="card-section space-y-1">
+                  <p className="text-xs text-neutral-500">Runs today</p>
+                  <p className="text-2xl font-bold text-neutral-900">
+                    {lobby?.runsToday ?? 0}
+                  </p>
+                  <p className="text-xs text-neutral-600">
+                    Helpful for seeing how today&apos;s office energy compares
+                    to a typical day.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* Team standings */}
+            <section className="card">
+              <div className="card-section">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h2 className="text-sm font-semibold text-neutral-900">
+                      Team standings – this week
+                    </h2>
+                    <p className="text-xs text-neutral-600">
+                      Departments with the most completed commute quests.
+                    </p>
+                  </div>
+                </div>
+
+                {lobby && lobby.teamTotals.length > 0 ? (
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th className="th w-16">Rank</th>
+                        <th className="th">Team</th>
+                        <th className="th w-32 text-right">Runs</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lobby.teamTotals.map((team, idx) => (
+                        <tr
+                          key={team.team + idx}
+                          className={idx % 2 === 1 ? "tr-alt" : ""}
+                        >
+                          <td className="td text-sm text-neutral-600">
+                            #{idx + 1}
+                          </td>
+                          <td className="td text-sm font-medium">
+                            {team.team}
+                          </td>
+                          <td className="td text-sm text-right">
+                            {team.runsThisWeek}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="text-sm text-neutral-500">
+                    No commute runs yet this week. Once people complete quests,
+                    teams will show up here.
+                  </p>
+                )}
+              </div>
+            </section>
+
+            {/* Little “how HR might use this” blurb */}
+            <section className="card">
+              <div className="card-section text-sm text-neutral-600 space-y-2">
+                <h2 className="text-sm font-semibold text-neutral-900">
+                  How HR would use this
+                </h2>
+                <p>
+                  The idea is that HR can see not just who is eligible for
+                  commute benefits, but how often employees are actually
+                  engaging with them. A quick weekly check on this dashboard
+                  tells you which teams are leaning into office days and which
+                  ones might need a nudge or a perk adjustment.
+                </p>
+                <p className="text-xs text-neutral-500">
+                  For the prototype these numbers are based on seeded demo data,
+                  but the wiring and UX are the same as a real deployment.
+                </p>
+              </div>
+            </section>
+          </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
