@@ -1,3 +1,4 @@
+// src/app/employees/page.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -57,7 +58,7 @@ export default function EmployeesPage() {
     try {
       await enroll({
         employee: employeeId,
-        option: 1,
+        option: 1, // uses option with ID 1 from your seeded CommuteOption list
         status: "active",
       }).unwrap();
       setJustEnrolled((prev) => new Set(prev).add(employeeId));
@@ -67,11 +68,10 @@ export default function EmployeesPage() {
         next.delete(employeeId);
         return next;
       });
-      // Success notification
       showNotification("Successfully enrolled!", "success");
     } catch {
       showNotification(
-        "Enroll failed. (Duplicate active enrollment?)",
+        "Enroll failed. (Duplicate active enrollment or API error.)",
         "error"
       );
     } finally {
@@ -104,6 +104,15 @@ export default function EmployeesPage() {
     // Simple alert for now - you can replace with a toast library
     alert(message);
   };
+
+  // Dynamic department list based on current employees (from the seeded data)
+  const departments = useMemo(() => {
+    const set = new Set<string>();
+    employees.forEach((emp: any) => {
+      if (emp.department) set.add(emp.department);
+    });
+    return Array.from(set).sort();
+  }, [employees]);
 
   // Filter employees by search query
   const filteredEmployees = useMemo(() => {
@@ -205,8 +214,11 @@ export default function EmployeesPage() {
                   }}
                 >
                   <option value="">All Departments</option>
-                  <option value="Engineering">Engineering</option>
-                  <option value="Ops">Ops</option>
+                  {departments.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

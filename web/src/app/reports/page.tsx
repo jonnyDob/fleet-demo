@@ -239,13 +239,6 @@ export default function ReportsPage() {
               ))}
             </ul>
           )}
-
-          <p className="text-xs text-neutral-500">
-            For the interview, you can talk through how Fleet could let HR
-            configure different reward types, budgets, and eligibility rules,
-            but the core idea is already visible here: commute choices roll up
-            into company-level savings and culture moments.
-          </p>
         </div>
       </section>
     </div>
