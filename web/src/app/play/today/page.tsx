@@ -2,154 +2,210 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useGetLobbyQuery, useStartCommuteSessionMutation } from "@/lib/api";
+import {
+  useGetEmployeeDashboardQuery,
+  useSelectCommuteOptionMutation,
+} from "@/lib/api";
 
 export default function PlayTodayPage() {
   const router = useRouter();
-  const { data, isLoading, isError } = useGetLobbyQuery();
-  const [startSession, { isLoading: isStarting }] =
-    useStartCommuteSessionMutation();
+  const { data, isLoading, isError, refetch } = useGetEmployeeDashboardQuery();
 
-  const handleStart = async () => {
+  const [selectOption, { isLoading: isSelecting }] =
+    useSelectCommuteOptionMutation();
+
+  const handleViewStats = () => {
+    router.push("/play/result");
+  };
+
+  const handleSelect = async (optionId: number) => {
     try {
-      const res = await startSession().unwrap();
-      router.push(`/play/quest?sessionId=${res.id}`);
+      await selectOption({ optionId }).unwrap();
+      // refresh dashboard to get updated stats/progress
+      refetch();
     } catch (e) {
-      console.error("Failed to start session", e);
-      alert("Could not start quest – check the API logs.");
+      console.error("Failed to select commute option", e);
+      alert("Could not update commute choice – check the API logs.");
     }
   };
 
   if (isLoading) {
-    return <p className="text-sm text-neutral-600">Loading lobby…</p>;
+    return (
+      <p className="text-sm text-neutral-600">Loading your commute options…</p>
+    );
   }
 
   if (isError || !data) {
     return (
       <div className="p-4 rounded-xl bg-red-50 text-red-700 text-sm">
-        Could not load lobby. Make sure the API is running and you are logged
-        in.
+        Could not load your commute dashboard. Make sure the API is running.
       </div>
     );
   }
 
-  const { officeName, runsToday, runsThisWeek, teamTotals, coworkers } = data;
-  const weeklyGoal = 50;
-  const progressPct = Math.min(
-    100,
-    Math.round((runsThisWeek / weeklyGoal) * 100) || 0
-  );
+  const { employee, office, stats, progress, commuteOptions } = data;
+  const selectedOption = commuteOptions.find((o) => o.selected);
 
   return (
     <div className="space-y-6">
-      {/* Office progress card */}
+      {/* Summary card */}
       <section className="card">
-        <div className="card-section flex flex-col md:flex-row gap-6 md:items-center">
-          <div className="flex-1 space-y-2">
-            <h2 className="text-lg font-semibold text-neutral-900">
-              {officeName} lobby
-            </h2>
-            <p className="text-sm text-neutral-600">
-              This week your office is trying to hit{" "}
-              <span className="font-semibold">{weeklyGoal}</span> commute runs.
-            </p>
+        <div className="card-section space-y-4">
+          <p className="text-xs uppercase tracking-wide text-green-700">
+            Today&apos;s commute setup
+          </p>
+          <h2 className="text-2xl font-bold text-neutral-900">
+            Hi {employee.name.split(" ")[0]}, let&apos;s tune your commute
+          </h2>
+          <p className="text-sm text-neutral-600">
+            You&apos;re commuting into{" "}
+            <span className="font-semibold">
+              {office.name}
+              {office.city ? ` (${office.city})` : ""}
+            </span>
+            . Pick a mode below to see how much pre-tax money and CO₂ you can
+            save – and how it nudges your team toward rewards.
+          </p>
 
-            <div className="mt-3 space-y-2">
-              <div className="flex items-center justify-between text-xs text-neutral-600">
-                <span>
-                  Office progress: {runsThisWeek} / {weeklyGoal} runs
-                </span>
-                <span>{progressPct}%</span>
+          <div className="mt-4 grid md:grid-cols-3 gap-4 text-sm">
+            <div className="p-3 rounded-xl bg-brand-50">
+              <div className="text-xs text-neutral-600">Monthly savings</div>
+              <div className="text-xl font-semibold text-neutral-900">
+                ${stats.moneySavedMonthly.toFixed(0)}
               </div>
-              <div className="h-2 w-full rounded-full bg-neutral-100 overflow-hidden">
+              <div className="text-xs text-neutral-500">
+                Projected ${stats.moneySavedYearly.toFixed(0)} / year
+              </div>
+            </div>
+            <div className="p-3 rounded-xl bg-purple-50">
+              <div className="text-xs text-neutral-600">CO₂ saved / month</div>
+              <div className="text-xl font-semibold text-neutral-900">
+                {stats.co2SavedMonthlyKg.toFixed(0)} kg
+              </div>
+              <div className="text-xs text-neutral-500">
+                ~{stats.co2SavedYearlyKg.toFixed(0)} kg / year
+              </div>
+            </div>
+            <div className="p-3 rounded-xl bg-pink-50">
+              <div className="text-xs text-neutral-600">
+                Team reward progress
+              </div>
+              <div className="text-xl font-semibold text-neutral-900">
+                {progress.teamReward.percent}%
+              </div>
+              <div className="w-full h-2 mt-2 rounded-full bg-neutral-100 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-brand-500 to-pink-500 transition-all"
-                  style={{ width: `${progressPct}%` }}
+                  style={{ width: `${progress.teamReward.percent}%` }}
                 />
               </div>
             </div>
-
-            <p className="text-xs text-neutral-500 mt-2">
-              {runsToday} runs completed today • Your demo run still counts
-              toward the office goal.
-            </p>
           </div>
 
-          <div className="flex flex-col items-stretch gap-2">
-            <button
-              onClick={handleStart}
-              disabled={isStarting}
-              className="btn-primary btn-lg shadow-card"
-            >
-              {isStarting ? "Starting your quest…" : "Start my commute quest"}
-            </button>
-            <span className="text-xs text-neutral-500 text-center">
-              Fully playable from your desk – no real commute needed.
-            </span>
-          </div>
+          <button
+            onClick={handleViewStats}
+            className="btn-secondary btn-lg mt-4"
+          >
+            View my detailed stats
+          </button>
         </div>
       </section>
 
-      {/* Team standings & coworkers */}
-      <section className="grid md:grid-cols-[2fr,3fr] gap-6">
-        {/* Team standings */}
-        <div className="card">
-          <div className="card-section">
-            <h3 className="text-sm font-semibold text-neutral-900 mb-3">
-              Team standings this week
-            </h3>
-            {teamTotals.length === 0 ? (
-              <p className="text-sm text-neutral-500">
-                No runs yet this week. Be the first to start a quest!
+      {/* Commute options */}
+      <section className="card">
+        <div className="card-section space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-semibold text-neutral-900">
+                Choose how you get to the office
+              </h3>
+              <p className="text-xs text-neutral-600">
+                In a real deployment, this could come from payroll and benefits
+                data. For the demo, these are preloaded options with realistic
+                numbers.
               </p>
-            ) : (
-              <ul className="space-y-2">
-                {teamTotals.map((t, idx) => (
-                  <li
-                    key={t.team + idx}
-                    className="flex items-center justify-between text-sm"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-neutral-500">
-                        #{idx + 1}
-                      </span>
-                      <span className="font-medium">{t.team}</span>
-                    </div>
-                    <span className="text-neutral-600">
-                      {t.runsThisWeek} runs
-                    </span>
-                  </li>
-                ))}
-              </ul>
+            </div>
+            {selectedOption && (
+              <div className="hidden md:block text-xs text-neutral-500 text-right">
+                <div className="font-semibold text-neutral-800">
+                  Current choice:
+                </div>
+                <div>{selectedOption.name}</div>
+              </div>
             )}
           </div>
-        </div>
 
-        {/* Coworkers list */}
-        <div className="card">
-          <div className="card-section">
-            <h3 className="text-sm font-semibold text-neutral-900 mb-3">
-              Who&apos;s around this morning
-            </h3>
-            <ul className="space-y-2 max-h-64 overflow-auto pr-1">
-              {coworkers.map((c, idx) => (
-                <li
-                  key={c.name + idx}
-                  className="flex items-center justify-between text-sm"
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            {commuteOptions.map((opt) => {
+              const isSelected = opt.selected;
+              return (
+                <div
+                  key={opt.id}
+                  className={`border rounded-xl p-4 flex flex-col gap-3 ${
+                    isSelected
+                      ? "border-brand-500 bg-brand-50/60"
+                      : "border-neutral-200 bg-white"
+                  }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-full bg-brand-100 flex items-center justify-center text-xs font-semibold text-brand-700">
-                      {c.name.charAt(0)}
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <h4 className="text-sm font-semibold text-neutral-900">
+                        {opt.name}
+                      </h4>
+                      {opt.description && (
+                        <p className="text-xs text-neutral-600">
+                          {opt.description}
+                        </p>
+                      )}
+                    </div>
+                    {isSelected && (
+                      <span className="text-xs px-2 py-1 rounded-full bg-brand-100 text-brand-700 font-medium">
+                        Selected
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-xs text-neutral-600">
+                    <div>
+                      <div className="text-[11px] uppercase font-medium text-neutral-500">
+                        Pre-tax / month
+                      </div>
+                      <div className="text-sm font-semibold text-neutral-900">
+                        ${opt.monthlyCostBeforeTax.toFixed(0)}
+                      </div>
                     </div>
                     <div>
-                      <div className="font-medium">{c.name}</div>
-                      <div className="text-xs text-neutral-500">{c.team}</div>
+                      <div className="text-[11px] uppercase font-medium text-neutral-500">
+                        After-tax
+                      </div>
+                      <div className="text-sm font-semibold text-neutral-900">
+                        ${opt.monthlyCostAfterTax.toFixed(0)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] uppercase font-medium text-neutral-500">
+                        CO₂ / month
+                      </div>
+                      <div className="text-sm font-semibold text-neutral-900">
+                        {opt.co2KgPerMonth.toFixed(0)} kg
+                      </div>
                     </div>
                   </div>
-                  <span className="text-xs text-neutral-600">{c.status}</span>
-                </li>
-              ))}
-            </ul>
+
+                  <button
+                    onClick={() => handleSelect(opt.id)}
+                    disabled={isSelecting || isSelected}
+                    className="btn-primary btn-sm mt-1"
+                  >
+                    {isSelected
+                      ? "Current commute"
+                      : isSelecting
+                      ? "Updating…"
+                      : "Use this commute"}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
