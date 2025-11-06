@@ -31,6 +31,7 @@ class Command(BaseCommand):
         HRProfile.objects.all().delete()
         Reward.objects.all().delete()
         Office.objects.all().delete()
+        CommuteOption.objects.all().delete() 
 
         self.stdout.write("Creating demo office and HR user...")
         office, hr_user = self._create_office_and_hr(User)
