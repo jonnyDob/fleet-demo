@@ -1,22 +1,45 @@
+// app/layout.tsx
 "use client";
 
 import "./global.css";
 import { Provider } from "react-redux";
 import { store } from "@/store";
 import Link from "next/link";
-import { usePathname } from "next/navigation"; // ⬅️ NEW
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react"; // ⬅️ NEW
+
+type Mode = "admin" | "commuter" | null; // ⬅️ NEW
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname(); // ⬅️ NEW
-  const showNav = pathname !== "/login"; // ⬅️ NEW
+  const pathname = usePathname();
+  const showNav = pathname !== "/login";
+
+  const [mode, setMode] = useState<Mode>(null); // ⬅️ NEW
+
+  // Read chosen mode ("admin" or "commuter") from localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem("mode");
+    if (stored === "admin" || stored === "commuter") {
+      setMode(stored);
+    }
+  }, []);
 
   const logout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/login";
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // ignore logout errors for now
+    }
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("token");
+      window.localStorage.removeItem("mode"); // ⬅️ NEW
+      window.location.href = "/login";
+    }
   };
 
   return (
@@ -37,18 +60,36 @@ export default function RootLayout({
 
                     {/* Navigation Links */}
                     <div className="flex items-center gap-2">
-                      <Link
-                        href="/employees"
-                        className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-700 transition-all"
-                      >
-                        Employees
-                      </Link>
-                      <Link
-                        href="/reports"
-                        className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-700 transition-all"
-                      >
-                        Reports
-                      </Link>
+                      {/* ADMIN FLOW NAV */}
+                      {mode === "admin" && (
+                        <>
+                          <Link
+                            href="/employees"
+                            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-700 transition-all"
+                          >
+                            Employees
+                          </Link>
+                          <Link
+                            href="/reports"
+                            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-700 transition-all"
+                          >
+                            Reports
+                          </Link>
+                        </>
+                      )}
+
+                      {/* COMMUTER FLOW NAV */}
+                      {mode === "commuter" && (
+                        <>
+                          <Link
+                            href="/play/today"
+                            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-700 transition-all"
+                          >
+                            Today&apos;s Quest
+                          </Link>
+                          {/* later you can add more, e.g. /play/history */}
+                        </>
+                      )}
                     </div>
                   </div>
 
