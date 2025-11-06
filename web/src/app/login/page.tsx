@@ -15,6 +15,8 @@ export default function LoginPage() {
       const res = await login({ username, password }).unwrap();
       localStorage.setItem("token", res.access);
 
+      localStorage.setItem("mode", tab); // "admin" or "commuter"
+
       // 🔽 NEW: branch based on active tab
       if (tab === "admin") {
         window.location.href = "/employees";
