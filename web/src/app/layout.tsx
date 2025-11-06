@@ -18,17 +18,15 @@ export default function RootLayout({
   const pathname = usePathname();
   const showNav = pathname !== "/login";
 
-  const [mode, setMode] = useState<Mode>(null); // ⬅️ NEW
-
   // Read chosen mode ("admin" or "commuter") from localStorage
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  const [mode, setMode] = useState<Mode>(() => {
+    if (typeof window === "undefined") return null;
     const stored = window.localStorage.getItem("mode");
     if (stored === "admin" || stored === "commuter") {
-      setMode(stored);
+      return stored;
     }
-  }, []);
-
+    return null;
+  });
   const logout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
