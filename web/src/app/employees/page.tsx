@@ -21,13 +21,19 @@ export default function EmployeesPage() {
   const [dept, setDept] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Employees (optional filter)
+  // 1) Unfiltered employees: used to compute full department list + total employees
+  const { data: allEmployeesData } = useEmployeesQuery(undefined);
+  const allEmployees = Array.isArray(allEmployeesData)
+    ? allEmployeesData
+    : allEmployeesData?.results ?? [];
+
+  // 2) Filtered employees (by department) for the table
   const { data, isLoading, error } = useEmployeesQuery(
     dept ? { department: dept } : undefined
   );
   const employees = Array.isArray(data) ? data : data?.results ?? [];
 
-  // Active enrollments (server truth)
+  // Active enrollments (server truth – paginated, but count gives total)
   const { data: enrollmentsData } = useEnrollmentsQuery({ status: "active" });
   const enrollmentsArray = Array.isArray(enrollmentsData)
     ? enrollmentsData
@@ -58,11 +64,10 @@ export default function EmployeesPage() {
     try {
       await enroll({
         employee: employeeId,
-        option: 1, // uses option with ID 1 from your seeded CommuteOption list
+        option: 1, // demo: enroll into option ID 1
         status: "active",
       }).unwrap();
       setJustEnrolled((prev) => new Set(prev).add(employeeId));
-      // if it had been canceled locally, clear that state
       setJustCanceled((prev) => {
         const next = new Set(prev);
         next.delete(employeeId);
@@ -86,7 +91,6 @@ export default function EmployeesPage() {
     try {
       await cancelEnroll({ id: enrollmentId }).unwrap();
       setJustCanceled((prev) => new Set(prev).add(employeeId));
-      // if it had been newly enrolled in this session, clear that
       setJustEnrolled((prev) => {
         const next = new Set(prev);
         next.delete(employeeId);
@@ -101,20 +105,21 @@ export default function EmployeesPage() {
   };
 
   const showNotification = (message: string, type: "success" | "error") => {
-    // Simple alert for now - you can replace with a toast library
+    // Simple alert for now - replace with a toast later if you like
     alert(message);
   };
 
-  // Dynamic department list based on current employees (from the seeded data)
+  // Dynamic department list based on ALL employees (not filtered),
+  // so the dropdown always shows the full set of departments.
   const departments = useMemo(() => {
     const set = new Set<string>();
-    employees.forEach((emp: any) => {
+    allEmployees.forEach((emp: any) => {
       if (emp.department) set.add(emp.department);
     });
     return Array.from(set).sort();
-  }, [employees]);
+  }, [allEmployees]);
 
-  // Filter employees by search query
+  // Filter employees (for the current table view) by search query
   const filteredEmployees = useMemo(() => {
     if (!searchQuery) return employees;
     return employees.filter((emp: any) => {
@@ -127,12 +132,17 @@ export default function EmployeesPage() {
     });
   }, [employees, searchQuery]);
 
-  const activeCount = filteredEmployees.filter((e: any) => {
-    const serverActive = activeMap.has(e.id);
-    const locallyEnrolled = justEnrolled.has(e.id);
-    const locallyCanceled = justCanceled.has(e.id);
-    return (serverActive && !locallyCanceled) || locallyEnrolled;
-  }).length;
+  // Global active count across ALL employees (not just current page/view)
+  const globalActiveCount = useMemo(() => {
+    return allEmployees.filter((e: any) => {
+      const serverActive = activeMap.has(e.id);
+      const locallyEnrolled = justEnrolled.has(e.id);
+      const locallyCanceled = justCanceled.has(e.id);
+      return (serverActive && !locallyCanceled) || locallyEnrolled;
+    }).length;
+  }, [allEmployees, activeMap, justEnrolled, justCanceled]);
+
+  const totalEmployees = allEmployees.length;
 
   // Get initials from name
   const getInitials = (name: string) => {
@@ -180,7 +190,7 @@ export default function EmployeesPage() {
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-purple-600" />
                   <span className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                    {activeCount} / {filteredEmployees.length} Enrolled
+                    {globalActiveCount} / {totalEmployees || 0} Enrolled
                   </span>
                 </div>
               </div>
