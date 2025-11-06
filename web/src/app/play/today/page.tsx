@@ -6,13 +6,17 @@ import {
   useGetEmployeeDashboardQuery,
   useSelectCommuteOptionMutation,
 } from "@/lib/api";
+import { useState } from "react";
 
 export default function PlayTodayPage() {
   const router = useRouter();
   const { data, isLoading, isError, refetch } = useGetEmployeeDashboardQuery();
 
-  const [selectOption, { isLoading: isSelecting }] =
-    useSelectCommuteOptionMutation();
+  // We don't need the global isLoading from the mutation anymore
+  const [selectOption] = useSelectCommuteOptionMutation();
+
+  // Track which option (if any) is currently being updated
+  const [pendingOptionId, setPendingOptionId] = useState<number | null>(null);
 
   const handleViewStats = () => {
     router.push("/play/result");
@@ -20,12 +24,20 @@ export default function PlayTodayPage() {
 
   const handleSelect = async (optionId: number) => {
     try {
+      // mark this specific option as "updating"
+      setPendingOptionId(optionId);
+
+      // call the API
       await selectOption({ optionId }).unwrap();
-      // refresh dashboard to get updated stats/progress
-      refetch();
+
+      // wait for the dashboard to refetch so UI reflects the new selection
+      await refetch();
     } catch (e) {
       console.error("Failed to select commute option", e);
       alert("Could not update commute choice – check the API logs.");
+    } finally {
+      // clear loading state for this option
+      setPendingOptionId(null);
     }
   };
 
@@ -138,6 +150,8 @@ export default function PlayTodayPage() {
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             {commuteOptions.map((opt) => {
               const isSelected = opt.selected;
+              const isPending = pendingOptionId === opt.id;
+
               return (
                 <div
                   key={opt.id}
@@ -194,12 +208,12 @@ export default function PlayTodayPage() {
 
                   <button
                     onClick={() => handleSelect(opt.id)}
-                    disabled={isSelecting || isSelected}
+                    disabled={isSelected || isPending}
                     className="btn-primary btn-sm mt-1"
                   >
                     {isSelected
                       ? "Current commute"
-                      : isSelecting
+                      : isPending
                       ? "Updating…"
                       : "Use this commute"}
                   </button>
