@@ -23,6 +23,15 @@ class Command(BaseCommand):
         fake = Faker()
         User = get_user_model()
 
+        # Clear existing demo data so this command is safe to run multiple times
+        self.stdout.write("Clearing existing demo data...")
+        CommuteSession.objects.all().delete()
+        Enrollment.objects.all().delete()
+        Employee.objects.all().delete()
+        HRProfile.objects.all().delete()
+        Reward.objects.all().delete()
+        Office.objects.all().delete()
+
         self.stdout.write("Creating demo office and HR user...")
         office, hr_user = self._create_office_and_hr(User)
 
