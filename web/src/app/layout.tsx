@@ -6,9 +6,9 @@ import { Provider } from "react-redux";
 import { store } from "@/store";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react"; // ⬅️ NEW
+import { useEffect, useState } from "react";
 
-type Mode = "admin" | "commuter" | null; // ⬅️ NEW
+type Mode = "admin" | "commuter" | null;
 
 export default function RootLayout({
   children,
@@ -17,6 +17,8 @@ export default function RootLayout({
 }) {
   const pathname = usePathname();
   const showNav = pathname !== "/login";
+
+  const [mounted, setMounted] = useState(false);
 
   // Read chosen mode ("admin" or "commuter") from localStorage
   const [mode, setMode] = useState<Mode>(() => {
@@ -27,6 +29,11 @@ export default function RootLayout({
     }
     return null;
   });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const logout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
@@ -35,7 +42,7 @@ export default function RootLayout({
     }
     if (typeof window !== "undefined") {
       window.localStorage.removeItem("token");
-      window.localStorage.removeItem("mode"); // ⬅️ NEW
+      window.localStorage.removeItem("mode");
       window.location.href = "/login";
     }
   };
@@ -57,38 +64,40 @@ export default function RootLayout({
                     </div>
 
                     {/* Navigation Links */}
-                    <div className="flex items-center gap-2">
-                      {/* ADMIN FLOW NAV */}
-                      {mode === "admin" && (
-                        <>
-                          <Link
-                            href="/employees"
-                            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-700 transition-all"
-                          >
-                            Employees
-                          </Link>
-                          <Link
-                            href="/reports"
-                            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-700 transition-all"
-                          >
-                            Reports
-                          </Link>
-                        </>
-                      )}
+                    {mounted && (
+                      <div className="flex items-center gap-2">
+                        {/* ADMIN FLOW NAV */}
+                        {mode === "admin" && (
+                          <>
+                            <Link
+                              href="/employees"
+                              className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-700 transition-all"
+                            >
+                              Employees
+                            </Link>
+                            <Link
+                              href="/reports"
+                              className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-700 transition-all"
+                            >
+                              Reports
+                            </Link>
+                          </>
+                        )}
 
-                      {/* COMMUTER FLOW NAV */}
-                      {mode === "commuter" && (
-                        <>
-                          <Link
-                            href="/play/today"
-                            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-700 transition-all"
-                          >
-                            Today&apos;s Quest
-                          </Link>
-                          {/* later you can add more, e.g. /play/history */}
-                        </>
-                      )}
-                    </div>
+                        {/* COMMUTER FLOW NAV */}
+                        {mode === "commuter" && (
+                          <>
+                            <Link
+                              href="/play/today"
+                              className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-700 transition-all"
+                            >
+                              Today&apos;s Quest
+                            </Link>
+                            {/* later you can add more, e.g. /play/history */}
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Logout Button */}
