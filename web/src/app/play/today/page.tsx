@@ -22,11 +22,13 @@ export default function PlayTodayPage() {
 
   // ALL HOOKS MUST BE CALLED FIRST - before any early returns
   const { data, isLoading, isError, refetch } = useGetEmployeeDashboardQuery();
-  const [selectOption, { isLoading: isSelecting }] =
-    useSelectCommuteOptionMutation();
+  const [selectOption] = useSelectCommuteOptionMutation();
 
   const [previewOptionId, setPreviewOptionId] = useState<number | null>(null);
   const [showXpFlash, setShowXpFlash] = useState(false);
+  const [selectingOptionId, setSelectingOptionId] = useState<number | null>(
+    null
+  );
 
   // Extract data (with fallbacks for when data is loading)
   const employee = data?.employee;
@@ -68,16 +70,19 @@ export default function PlayTodayPage() {
   };
 
   const handleConfirm = async (optionId: number) => {
+    setSelectingOptionId(optionId);
     try {
       await selectOption({ optionId }).unwrap();
-      // refetch stats after backend updates
-      refetch();
+      // Wait for refetch to complete so UI updates immediately
+      await refetch();
       // show small gamified flash
       setShowXpFlash(true);
       setTimeout(() => setShowXpFlash(false), 2200);
     } catch (e) {
       console.error("Failed to select commute option", e);
       alert("Could not update commute choice – check the API logs.");
+    } finally {
+      setSelectingOptionId(null);
     }
   };
 
@@ -187,6 +192,7 @@ export default function PlayTodayPage() {
               {commuteOptions.map((opt) => {
                 const isSelected = selectedOption?.id === opt.id;
                 const isPreviewed = previewOption?.id === opt.id;
+                const isSelectingThis = selectingOptionId === opt.id;
 
                 const modeKey = optionToModeKey(opt.name);
                 const colorStripe =
@@ -209,11 +215,11 @@ export default function PlayTodayPage() {
                     onClick={() => setPreviewOptionId(opt.id)}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div
-                          className={`w-1 h-10 rounded-full bg-gradient-to-b ${colorStripe}`}
+                          className={`w-1 h-10 rounded-full bg-gradient-to-b ${colorStripe} flex-shrink-0`}
                         />
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <h4 className="text-sm font-semibold text-neutral-900">
                             {opt.name}
                           </h4>
@@ -225,7 +231,7 @@ export default function PlayTodayPage() {
                         </div>
                       </div>
                       {isSelected && (
-                        <span className="text-[11px] px-2 py-1 rounded-full bg-brand-100 text-brand-700 font-medium">
+                        <span className="text-[11px] px-2 py-1 rounded-full bg-brand-100 text-brand-700 font-medium whitespace-nowrap flex-shrink-0">
                           Currently selected
                         </span>
                       )}
@@ -263,10 +269,10 @@ export default function PlayTodayPage() {
                         e.stopPropagation();
                         handleConfirm(opt.id);
                       }}
-                      disabled={isSelecting}
+                      disabled={isSelectingThis}
                       className="btn-primary btn-sm mt-1"
                     >
-                      {isSelecting
+                      {isSelectingThis
                         ? "Updating…"
                         : isSelected
                         ? "Reconfirm this commute"
