@@ -8,7 +8,7 @@ export default function QuestPage() {
       fallback={
         <div className="card">
           <div className="card-section p-4 text-sm text-neutral-600">
-            Loading quest…
+            Loading rewards....
           </div>
         </div>
       }

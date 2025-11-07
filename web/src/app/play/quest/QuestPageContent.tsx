@@ -1,112 +1,198 @@
 // app/play/quest/QuestPageContent.tsx
 "use client";
 
-import { useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useFinishCommuteSessionMutation } from "@/lib/api";
-
-const MISSIONS = [
-  {
-    key: "calm_start",
-    title: "Calm start",
-    description: "Take three slow breaths and pick one tiny win for today.",
-  },
-  {
-    key: "plan",
-    title: "Plan your win",
-    description:
-      "Decide one thing you’ll do on this commute: rest, learn, or plan.",
-  },
-  {
-    key: "connect",
-    title: "Connect",
-    description: "Think of one coworker you’ll check in with when you arrive.",
-  },
-];
+import { useRouter } from "next/navigation";
+import { useGetEmployeeDashboardQuery } from "@/lib/api";
 
 export default function QuestPageContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const sessionIdParam = searchParams.get("sessionId");
-  const sessionId = sessionIdParam ? parseInt(sessionIdParam, 10) : null;
+  const { data, isLoading, isError } = useGetEmployeeDashboardQuery();
 
-  const [step, setStep] = useState(0);
-  const [finishSession, { isLoading }] = useFinishCommuteSessionMutation();
-
-  if (!sessionId) {
+  if (isLoading) {
     return (
-      <div className="p-4 rounded-xl bg-red-50 text-red-700 text-sm">
-        Missing session. Go back to the lobby and start again.
+      <div className="card">
+        <div className="card-section p-4 text-sm text-neutral-600">
+          Loading rewards…
+        </div>
       </div>
     );
   }
 
-  const mission = MISSIONS[step];
-  const total = MISSIONS.length;
-  const pct = Math.round(((step + 1) / total) * 100);
+  if (isError || !data) {
+    return (
+      <div className="p-4 rounded-xl bg-red-50 text-red-700 text-sm">
+        Could not load rewards. Make sure the API is running and the dashboard
+        endpoint is returning data.
+      </div>
+    );
+  }
 
-  const handleNext = async () => {
-    if (step < total - 1) {
-      setStep((prev) => prev + 1);
-      return;
-    }
+  const { employee, office, progress } = data;
 
-    // Last step: finish session
-    try {
-      await finishSession(sessionId).unwrap();
-    } catch (e) {
-      console.error("Failed to finish session", e);
-    }
-    router.push("/play/result");
-  };
+  // Safely pull percentages if your backend has them; otherwise fall back
+  const individualPercent = clampPercent(
+    progress?.individualReward?.percent ?? 65
+  );
+  const teamPercent = clampPercent(progress?.teamReward?.percent ?? 40);
+
+  const individualReached = individualPercent >= 100;
+  const teamReached = teamPercent >= 100;
+
+  const firstName = employee?.name?.split(" ")[0] ?? "You";
 
   return (
-    <div className="card">
-      <div className="card-section space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-neutral-500">
-              Commute quest
-            </p>
-            <h2 className="text-lg font-semibold text-neutral-900">
-              Step {step + 1} of {total}
-            </h2>
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            <span className="text-xs text-neutral-500">{pct}% complete</span>
-            <div className="w-32 h-2 rounded-full bg-neutral-100 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-brand-500 to-pink-500 transition-all"
-                style={{ width: `${pct}%` }}
-              />
+    <div className="space-y-6">
+      <section className="card">
+        <div className="card-section space-y-6">
+          {/* Header + nav actions */}
+          <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-green-700">
+                Rewards
+              </p>
+              <h1 className="text-2xl font-bold text-neutral-900">
+                Rewards your office is working toward
+              </h1>
+              <p className="text-sm text-neutral-600">
+                These are the actual rewards your commutes unlock — one just for{" "}
+                {firstName} and two for your whole team at{" "}
+                <span className="font-semibold">{office.name}</span>.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => router.push("/play/today")}
+                className="btn-secondary btn-sm"
+              >
+                Back to today&apos;s commute
+              </button>
+              <button
+                onClick={() => router.push("/play/result")}
+                className="btn-primary btn-sm"
+              >
+                View stats
+              </button>
+            </div>
+          </header>
+
+          {/* Reward rows – hard-coded names, game-y visuals */}
+          <div className="space-y-4 pt-2">
+            {/* 1. Free Coffee Card – Individual */}
+            <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">☕️</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-semibold text-neutral-900">
+                        Free Coffee Card
+                      </h3>
+                      <span className="inline-flex items-center rounded-full bg-neutral-100 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-neutral-600">
+                        Individual
+                      </span>
+                    </div>
+                    <p className="text-xs text-neutral-600">
+                      A personal perk for {firstName} when you keep logging
+                      commutes.
+                    </p>
+                  </div>
+                </div>
+
+                <span className="text-xs font-medium text-green-700">
+                  {individualReached
+                    ? "Reached 🎉"
+                    : `${individualPercent}% complete`}
+                </span>
+              </div>
+
+              {/* Progress bar */}
+              <div className="w-full h-2 rounded-full bg-neutral-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-500 transition-all"
+                  style={{ width: `${individualPercent}%` }}
+                />
+              </div>
+            </div>
+
+            {/* 2. Team Pizza Friday – Team reward (current team reward) */}
+            <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🍕</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-semibold text-neutral-900">
+                        Team Pizza Friday
+                      </h3>
+                      <span className="inline-flex items-center rounded-full bg-neutral-100 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-neutral-600">
+                        Team reward
+                      </span>
+                    </div>
+                    <p className="text-xs text-neutral-600">
+                      When your whole office logs enough commutes, you unlock a
+                      Pizza Friday together.
+                    </p>
+                  </div>
+                </div>
+
+                <span className="text-xs font-medium text-purple-700">
+                  {teamReached ? "Reached 🎉" : `${teamPercent}% complete`}
+                </span>
+              </div>
+
+              <div className="w-full h-2 rounded-full bg-neutral-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-fuchsia-500 transition-all"
+                  style={{ width: `${teamPercent}%` }}
+                />
+              </div>
+            </div>
+
+            {/* 3. Leave Early Friday – Next team reward */}
+            <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-4 shadow-sm space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">⏰</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-semibold text-neutral-900">
+                        Leave Early Friday
+                      </h3>
+                      <span className="inline-flex items-center rounded-full bg-neutral-100 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-neutral-600">
+                        Team reward
+                      </span>
+                    </div>
+                    <p className="text-xs text-neutral-600">
+                      After Pizza Friday, this is the next team reward: heading
+                      home early to start the weekend.
+                    </p>
+                  </div>
+                </div>
+
+                <span className="text-xs font-medium text-neutral-500">
+                  Up next
+                </span>
+              </div>
+
+              {/* Faint bar just to show it’s coming later (not wired to real data yet) */}
+              <div className="w-full h-2 rounded-full bg-neutral-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-neutral-300 to-neutral-400 opacity-60"
+                  style={{ width: "25%" }}
+                />
+              </div>
             </div>
           </div>
         </div>
-
-        <div className="space-y-3">
-          <h3 className="text-xl font-semibold text-neutral-900">
-            {mission.title}
-          </h3>
-          <p className="text-sm text-neutral-600">{mission.description}</p>
-        </div>
-
-        <button
-          onClick={handleNext}
-          disabled={isLoading}
-          className="btn-primary btn-lg w-full mt-2"
-        >
-          {step < total - 1
-            ? "Complete mission"
-            : isLoading
-            ? "Finishing commute…"
-            : "Finish commute"}
-        </button>
-
-        <p className="text-xs text-neutral-500 text-center">
-          In a real deployment these missions could be tuned by office, mode, or
-          even mood. For now, it&apos;s a quick demo quest.
-        </p>
-      </div>
+      </section>
     </div>
   );
+}
+
+function clampPercent(value: number): number {
+  if (Number.isNaN(value)) return 0;
+  if (value < 0) return 0;
+  if (value > 100) return 100;
+  return value;
 }

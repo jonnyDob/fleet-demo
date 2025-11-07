@@ -88,10 +88,10 @@ export default function RootLayout({
                         {mode === "commuter" && (
                           <>
                             <Link
-                              href="/play/today"
+                              href="/play/quest"
                               className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-700 transition-all"
                             >
-                              Today&apos;s Quest
+                              Rewards
                             </Link>
                             {/* later you can add more, e.g. /play/history */}
                           </>
