@@ -34,7 +34,8 @@ export default function EmployeesPage() {
   const employees = Array.isArray(data) ? data : data?.results ?? [];
 
   // Active enrollments (server truth – paginated, but count gives total)
-  const { data: enrollmentsData } = useEnrollmentsQuery({ status: "active" });
+  const { data: enrollmentsData, refetch: refetchEnrollments } =
+    useEnrollmentsQuery({ status: "active" });
   const enrollmentsArray = Array.isArray(enrollmentsData)
     ? enrollmentsData
     : enrollmentsData?.results ?? [];
@@ -67,6 +68,7 @@ export default function EmployeesPage() {
         option: 1, // demo: enroll into option ID 1
         status: "active",
       }).unwrap();
+      await refetchEnrollments();
       setJustEnrolled((prev) => new Set(prev).add(employeeId));
       setJustCanceled((prev) => {
         const next = new Set(prev);
@@ -90,6 +92,7 @@ export default function EmployeesPage() {
     setProcessingId(employeeId);
     try {
       await cancelEnroll({ id: enrollmentId }).unwrap();
+      await refetchEnrollments();
       setJustCanceled((prev) => new Set(prev).add(employeeId));
       setJustEnrolled((prev) => {
         const next = new Set(prev);
@@ -362,7 +365,7 @@ export default function EmployeesPage() {
                                   Processing...
                                 </>
                               ) : (
-                                "Unenroll"
+                                "Unenroll from Pool"
                               )}
                             </button>
                           ) : (
@@ -377,7 +380,7 @@ export default function EmployeesPage() {
                                   Processing...
                                 </>
                               ) : (
-                                "Enroll to Transit"
+                                "Join Team Rewards Pool"
                               )}
                             </button>
                           )}
@@ -451,7 +454,7 @@ export default function EmployeesPage() {
                                 Processing...
                               </>
                             ) : (
-                              "Unenroll"
+                              "Unenroll from Pool"
                             )}
                           </button>
                         ) : (
@@ -466,7 +469,7 @@ export default function EmployeesPage() {
                                 Processing...
                               </>
                             ) : (
-                              "Enroll to Transit"
+                              "Join Team Rewards Pool"
                             )}
                           </button>
                         )}
