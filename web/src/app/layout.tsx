@@ -47,6 +47,20 @@ export default function RootLayout({
     }
   };
 
+  // Helper for active nav styling
+  const navLinkClass = (active: boolean) =>
+    [
+      "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+      active
+        ? "bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 shadow-sm"
+        : "text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-700",
+    ].join(" ");
+
+  // Active states for commuter nav
+  const isHome = pathname.startsWith("/play/today");
+  const isRewards = pathname.startsWith("/play/quest");
+  const isStats = pathname.startsWith("/play/result");
+
   return (
     <html lang="en">
       <body>
@@ -71,13 +85,17 @@ export default function RootLayout({
                           <>
                             <Link
                               href="/employees"
-                              className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-700 transition-all"
+                              className={navLinkClass(
+                                pathname.startsWith("/employees")
+                              )}
                             >
                               Employees
                             </Link>
                             <Link
                               href="/reports"
-                              className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-700 transition-all"
+                              className={navLinkClass(
+                                pathname.startsWith("/reports")
+                              )}
                             >
                               Reports
                             </Link>
@@ -88,12 +106,23 @@ export default function RootLayout({
                         {mode === "commuter" && (
                           <>
                             <Link
+                              href="/play/today"
+                              className={navLinkClass(isHome)}
+                            >
+                              Home
+                            </Link>
+                            <Link
                               href="/play/quest"
-                              className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-700 transition-all"
+                              className={navLinkClass(isRewards)}
                             >
                               Rewards
                             </Link>
-                            {/* later you can add more, e.g. /play/history */}
+                            <Link
+                              href="/play/result"
+                              className={navLinkClass(isStats)}
+                            >
+                              My Statistics
+                            </Link>
                           </>
                         )}
                       </div>
