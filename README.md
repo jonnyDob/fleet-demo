@@ -245,3 +245,6 @@ I also used Anthropic’s Claude a few times for focused tasks where a fresh per
   Targeted debugging help for getting realistic fake data seeded into the Railway Postgres instance so the demo would feel populated and believable.  
   https://claude.ai/share/4c9b8c09-c462-4887-a81b-a987b43753a1
 ---
+## License
+
+This project is licensed under the [MIT License](./LICENSE).
