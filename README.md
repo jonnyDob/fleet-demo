@@ -198,3 +198,50 @@ At a high level:
   - Aggregated statistics for money saved, CO₂ reduced, and rewards reached
 
 ---
+
+## AI-assisted workflow & process transcripts
+
+As part of this project, I used AI tools as a thinking partner for architecture choices, scoping, debugging, and polish. Most of the work was done with ChatGPT (for long, iterative sessions), with a few targeted uses of Claude for UI refinement and debugging. The links below are public transcripts that show my process end-to-end — from first exploration of Fleet’s product and stack, through deployment, iteration, and final presentation.
+
+### ChatGPT transcripts
+
+- **Initial exploration & first demo direction**  
+  Early conversations about Fleet’s product, tech stack options, and what an initial demo should focus on.  
+  https://chatgpt.com/share/690e4a05-1554-8007-a1e8-4009d94a4ee0
+
+- **Discovery, scope, constraints & first deployments (Vercel + Railway)**  
+  Defining scope, mapping constraints, and getting the first version deployed to Vercel (web) and Railway (API + Postgres).  
+  https://chatgpt.com/share/690e4b88-48d8-8007-b0b7-1d291b815277
+
+- **Targeted help for concrete implementation steps**  
+  Zooming in on specific pieces of the plan (routes, API wiring, state management) and implementing them based on the earlier architecture decisions.  
+  https://chatgpt.com/share/690e4c26-1db0-8007-a44b-adbd3ccecfe4
+
+- **Background learning, debugging & bug fixes**  
+  Deep dives into libraries, error messages, and edge cases as they came up during development, plus step-by-step debugging.  
+  https://chatgpt.com/share/690e4c61-4560-8007-b1a4-e437702b7b4e
+
+- **Full plan review after initial deploys**  
+  Revisiting the overall architecture once the first deployments were working, tightening the plan, and identifying next improvements.  
+  https://chatgpt.com/share/690e4c8d-b598-8007-8ca2-3152e069ce01
+
+- **UI cleanup, UX polish & final refinements**  
+  Iterating on layout, styling, flows, and copy to make the demo feel cohesive and closer to a real product experience.  
+  https://chatgpt.com/share/690e4cc0-6bb4-8007-9856-b2b751ae0f31
+
+- **README, Markdown structure & presentation**  
+  Final pass on documentation, README structure, screenshots, and overall presentation for this repo.  
+  https://chatgpt.com/share/690e4ceb-8788-8007-9cf4-5e51eedfbd3b
+
+### Claude transcripts
+
+I also used Anthropic’s Claude a few times for focused tasks where a fresh perspective was helpful. The free version has a smaller context window, so I used it mainly for smaller, self-contained pieces of work:
+
+- **7-day UI refresh & structure review**  
+  Short sessions focused on improving layout, visual structure, and copy for key pages in the demo, within a 7-day context window.  
+  https://claude.ai/share/33b5f068-11b0-47a9-9cf2-4799195e0930
+
+- **Debugging Railway while seeding Postgres**  
+  Targeted debugging help for getting realistic fake data seeded into the Railway Postgres instance so the demo would feel populated and believable.  
+  https://claude.ai/share/4c9b8c09-c462-4887-a81b-a987b43753a1
+---
