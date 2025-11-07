@@ -1,7 +1,8 @@
+// src/app/employees/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useEmployeesQuery, useEnrollmentsQuery } from "@/lib/api";
+import { useEmployeesQuery } from "@/lib/api";
 import {
   Users,
   Search,
@@ -28,19 +29,16 @@ export default function EmployeesPage() {
   );
   const employees = Array.isArray(data) ? data : data?.results ?? [];
 
-  // Active enrollments (server truth – only used once to seed local pool)
-  const { data: enrollmentsData } = useEnrollmentsQuery({ status: "active" });
-  const enrollmentsArray = Array.isArray(enrollmentsData)
-    ? enrollmentsData
-    : enrollmentsData?.results ?? [];
-
   // Local "Team Rewards Pool" membership (front-end only, persisted via localStorage)
   const [poolMembers, setPoolMembers] = useState<Set<number>>(new Set());
   const [initializedPool, setInitializedPool] = useState(false);
 
-  // Seed from localStorage first; if empty, seed once from backend enrollments
+  // Seed from localStorage first; if empty and we have employees, mark ALL as enrolled once
   useEffect(() => {
     if (initializedPool) return;
+
+    // Wait until employees are loaded
+    if (!allEmployees || allEmployees.length === 0) return;
 
     // 1) Try localStorage
     const fromStorage = loadRewardsPool();
@@ -50,17 +48,16 @@ export default function EmployeesPage() {
       return;
     }
 
-    // 2) Otherwise, seed from backend active enrollments
-    const initial = new Set<number>();
-    for (const row of enrollmentsArray) {
-      const emp = row?.employee;
-      const empId = typeof emp === "number" ? emp : emp?.id;
-      if (empId) initial.add(empId);
-    }
+    // 2) Otherwise, first-time: seed with ALL employees as "enrolled"
+    const allIds = allEmployees
+      .map((emp: any) => emp.id)
+      .filter((id: any) => typeof id === "number");
+
+    const initial = new Set<number>(allIds);
     setPoolMembers(initial);
-    saveRewardsPool([...initial]);
+    saveRewardsPool(allIds);
     setInitializedPool(true);
-  }, [enrollmentsArray, initializedPool]);
+  }, [allEmployees, initializedPool]);
 
   const handleEnroll = (employeeId: number) => {
     setPoolMembers((prev) => {
