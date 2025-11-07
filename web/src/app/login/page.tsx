@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useLoginMutation } from "@/lib/api";
 
 export default function LoginPage() {
-  const [tab, setTab] = useState<"admin" | "commuter">("admin");
+  const [tab, setTab] = useState<"admin" | "commuter">("commuter");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [login, { isLoading, error }] = useLoginMutation();
