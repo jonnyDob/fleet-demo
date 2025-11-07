@@ -1,10 +1,11 @@
-// src/app/reports/page.tsx
 "use client";
 
-import { useGetHrDashboardQuery } from "@/lib/api";
+import { useGetHrDashboardQuery, useEmployeesQuery } from "@/lib/api";
+import { loadRewardsPool } from "@/lib/rewardsPoolStorage";
 
 export default function ReportsPage() {
   const { data, isLoading, isError, refetch } = useGetHrDashboardQuery();
+  const { data: employeesData } = useEmployeesQuery(undefined);
 
   if (isLoading) {
     return (
@@ -29,6 +30,19 @@ export default function ReportsPage() {
   }
 
   const { office, summary, charts, rewards } = data;
+
+  // Employee list (for total count), falling back to backend summary if needed
+  const employees = Array.isArray(employeesData)
+    ? employeesData
+    : employeesData?.results ?? [];
+
+  const poolMembers = loadRewardsPool();
+  const localTotalEmployees = employees.length || summary.totalEmployees;
+  const localEnrolled = poolMembers.length;
+  const localParticipationRate =
+    localTotalEmployees > 0
+      ? (localEnrolled / localTotalEmployees) * 100
+      : summary.participationRate;
 
   const maxMoney = charts.moneySavedByMonth.length
     ? Math.max(...charts.moneySavedByMonth.map((m) => m.amount))
@@ -62,10 +76,10 @@ export default function ReportsPage() {
             <div className="p-3 rounded-xl bg-brand-50">
               <div className="text-xs text-neutral-600">Employees enrolled</div>
               <div className="text-xl font-semibold text-neutral-900">
-                {summary.participatingEmployees} / {summary.totalEmployees}
+                {localEnrolled} / {localTotalEmployees}
               </div>
               <div className="text-xs text-neutral-500">
-                Participation rate {summary.participationRate.toFixed(1)}%
+                Participation rate {localParticipationRate.toFixed(1)}%
               </div>
             </div>
 

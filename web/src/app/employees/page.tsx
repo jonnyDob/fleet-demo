@@ -1,13 +1,7 @@
-// src/app/employees/page.tsx
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  useEmployeesQuery,
-  useEnrollmentsQuery,
-  useEnrollMutation,
-  useCancelEnrollMutation,
-} from "@/lib/api";
+import { useEffect, useMemo, useState } from "react";
+import { useEmployeesQuery, useEnrollmentsQuery } from "@/lib/api";
 import {
   Users,
   Search,
@@ -16,6 +10,7 @@ import {
   Circle,
   Loader2,
 } from "lucide-react";
+import { loadRewardsPool, saveRewardsPool } from "@/lib/rewardsPoolStorage";
 
 export default function EmployeesPage() {
   const [dept, setDept] = useState("");
@@ -33,81 +28,61 @@ export default function EmployeesPage() {
   );
   const employees = Array.isArray(data) ? data : data?.results ?? [];
 
-  // Active enrollments (server truth – paginated, but count gives total)
-  const { data: enrollmentsData, refetch: refetchEnrollments } =
-    useEnrollmentsQuery({ status: "active" });
+  // Active enrollments (server truth – only used once to seed local pool)
+  const { data: enrollmentsData } = useEnrollmentsQuery({ status: "active" });
   const enrollmentsArray = Array.isArray(enrollmentsData)
     ? enrollmentsData
     : enrollmentsData?.results ?? [];
 
-  // Map: employeeId -> enrollmentId (if active)
-  const activeMap = useMemo(() => {
-    const m = new Map<number, number>();
+  // Local "Team Rewards Pool" membership (front-end only, persisted via localStorage)
+  const [poolMembers, setPoolMembers] = useState<Set<number>>(new Set());
+  const [initializedPool, setInitializedPool] = useState(false);
+
+  // Seed from localStorage first; if empty, seed once from backend enrollments
+  useEffect(() => {
+    if (initializedPool) return;
+
+    // 1) Try localStorage
+    const fromStorage = loadRewardsPool();
+    if (fromStorage.length > 0) {
+      setPoolMembers(new Set(fromStorage));
+      setInitializedPool(true);
+      return;
+    }
+
+    // 2) Otherwise, seed from backend active enrollments
+    const initial = new Set<number>();
     for (const row of enrollmentsArray) {
       const emp = row?.employee;
       const empId = typeof emp === "number" ? emp : emp?.id;
-      if (empId && row?.id) m.set(empId, row.id);
+      if (empId) initial.add(empId);
     }
-    return m;
-  }, [enrollmentsArray]);
+    setPoolMembers(initial);
+    saveRewardsPool([...initial]);
+    setInitializedPool(true);
+  }, [enrollmentsArray, initializedPool]);
 
-  // Mutations
-  const [enroll, { isLoading: enrolling }] = useEnrollMutation();
-  const [cancelEnroll, { isLoading: canceling }] = useCancelEnrollMutation();
-
-  // Local optimistic states
-  const [justEnrolled, setJustEnrolled] = useState<Set<number>>(new Set());
-  const [justCanceled, setJustCanceled] = useState<Set<number>>(new Set());
-  const [processingId, setProcessingId] = useState<number | null>(null);
-
-  const handleEnroll = async (employeeId: number) => {
-    setProcessingId(employeeId);
-    try {
-      await enroll({
-        employee: employeeId,
-        option: 1, // demo: enroll into option ID 1
-        status: "active",
-      }).unwrap();
-      await refetchEnrollments();
-      setJustEnrolled((prev) => new Set(prev).add(employeeId));
-      setJustCanceled((prev) => {
-        const next = new Set(prev);
-        next.delete(employeeId);
-        return next;
-      });
-      showNotification("Successfully enrolled!", "success");
-    } catch {
-      showNotification(
-        "Enroll failed. (Duplicate active enrollment or API error.)",
-        "error"
-      );
-    } finally {
-      setProcessingId(null);
-    }
+  const handleEnroll = (employeeId: number) => {
+    setPoolMembers((prev) => {
+      const next = new Set(prev);
+      next.add(employeeId);
+      saveRewardsPool([...next]);
+      return next;
+    });
+    showNotification("Joined Team Rewards Pool", "success");
   };
 
-  const handleUnenroll = async (employeeId: number) => {
-    const enrollmentId = activeMap.get(employeeId);
-    if (!enrollmentId) return; // nothing to cancel
-    setProcessingId(employeeId);
-    try {
-      await cancelEnroll({ id: enrollmentId }).unwrap();
-      await refetchEnrollments();
-      setJustCanceled((prev) => new Set(prev).add(employeeId));
-      setJustEnrolled((prev) => {
-        const next = new Set(prev);
-        next.delete(employeeId);
-        return next;
-      });
-      showNotification("Enrollment canceled", "success");
-    } catch {
-      showNotification("Could not cancel enrollment", "error");
-    } finally {
-      setProcessingId(null);
-    }
+  const handleUnenroll = (employeeId: number) => {
+    setPoolMembers((prev) => {
+      const next = new Set(prev);
+      next.delete(employeeId);
+      saveRewardsPool([...next]);
+      return next;
+    });
+    showNotification("Unenrolled from Team Rewards Pool", "success");
   };
 
-  const showNotification = (message: string, type: "success" | "error") => {
+  const showNotification = (message: string, _type: "success" | "error") => {
     // Simple alert for now - replace with a toast later if you like
     alert(message);
   };
@@ -135,16 +110,8 @@ export default function EmployeesPage() {
     });
   }, [employees, searchQuery]);
 
-  // Global active count across ALL employees (not just current page/view)
-  const globalActiveCount = useMemo(() => {
-    return allEmployees.filter((e: any) => {
-      const serverActive = activeMap.has(e.id);
-      const locallyEnrolled = justEnrolled.has(e.id);
-      const locallyCanceled = justCanceled.has(e.id);
-      return (serverActive && !locallyCanceled) || locallyEnrolled;
-    }).length;
-  }, [allEmployees, activeMap, justEnrolled, justCanceled]);
-
+  // Global active count across ALL employees (local pool only)
+  const globalActiveCount = poolMembers.size;
   const totalEmployees = allEmployees.length;
 
   // Get initials from name
@@ -303,12 +270,8 @@ export default function EmployeesPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {filteredEmployees.map((employee: any) => {
-                    const serverActive = activeMap.has(employee.id);
-                    const locallyEnrolled = justEnrolled.has(employee.id);
-                    const locallyCanceled = justCanceled.has(employee.id);
-                    const isActive =
-                      (serverActive && !locallyCanceled) || locallyEnrolled;
-                    const isProcessing = processingId === employee.id;
+                    const isActive = poolMembers.has(employee.id);
+                    const isProcessing = false; // no async calls now
 
                     return (
                       <tr
@@ -356,7 +319,7 @@ export default function EmployeesPage() {
                           {isActive ? (
                             <button
                               onClick={() => handleUnenroll(employee.id)}
-                              disabled={isProcessing || canceling}
+                              disabled={isProcessing}
                               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 border border-red-200 transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {isProcessing ? (
@@ -371,7 +334,7 @@ export default function EmployeesPage() {
                           ) : (
                             <button
                               onClick={() => handleEnroll(employee.id)}
-                              disabled={isProcessing || enrolling}
+                              disabled={isProcessing}
                               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-purple-600 to-pink-500 text-white hover:shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {isProcessing ? (
@@ -395,12 +358,8 @@ export default function EmployeesPage() {
             {/* Mobile Card View */}
             <div className="lg:hidden divide-y divide-gray-100">
               {filteredEmployees.map((employee: any) => {
-                const serverActive = activeMap.has(employee.id);
-                const locallyEnrolled = justEnrolled.has(employee.id);
-                const locallyCanceled = justCanceled.has(employee.id);
-                const isActive =
-                  (serverActive && !locallyCanceled) || locallyEnrolled;
-                const isProcessing = processingId === employee.id;
+                const isActive = poolMembers.has(employee.id);
+                const isProcessing = false;
 
                 return (
                   <div
@@ -445,7 +404,7 @@ export default function EmployeesPage() {
                         {isActive ? (
                           <button
                             onClick={() => handleUnenroll(employee.id)}
-                            disabled={isProcessing || canceling}
+                            disabled={isProcessing}
                             className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 border border-red-200 transition-all disabled:opacity-50"
                           >
                             {isProcessing ? (
@@ -460,7 +419,7 @@ export default function EmployeesPage() {
                         ) : (
                           <button
                             onClick={() => handleEnroll(employee.id)}
-                            disabled={isProcessing || enrolling}
+                            disabled={isProcessing}
                             className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-purple-600 to-pink-500 text-white hover:shadow-lg transition-all disabled:opacity-50"
                           >
                             {isProcessing ? (
